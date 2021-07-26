@@ -1,0 +1,15 @@
+{
+    "type": "postgres",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "123456",
+    "database": "oauth",
+    "logging": false,
+    "synchronize": true,
+    "entities": ["src/entities/*.ts"],
+    "migrations": ["src/migration/*.ts"],
+    "cli": {
+        "migrationsDir": "src/migration"
+    }
+}
