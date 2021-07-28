@@ -32,7 +32,7 @@ export class users1627266463211 implements MigrationInterface {
             name: "role",
             type: "enum",
             default: UserRole.USER,
-            enum: [UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN]
+            enum: [UserRole.USER, UserRole.ADMIN]
           },
           {
             name: "created_at",

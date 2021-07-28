@@ -1,8 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, BaseEntity, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from "typeorm";
+import { comparePassword } from "../helpers/passwordHashing";
 
 export enum UserRole {
   ADMIN = "admin",
-  SUPER_ADMIN = "super admin",
   USER = "user"
 }
 
@@ -20,7 +20,7 @@ export default class User extends BaseEntity {
   public username!: string;
 
   @Column({ type: "char", length: 60, select: false })
-  public password!: string;
+  password: string;
 
   @Column({
     type: "bool",
@@ -44,5 +44,9 @@ export default class User extends BaseEntity {
 
   @DeleteDateColumn({ name: "deleted_at" })
   public deletedAt!: Date;
+
+  async validatePassword(password: string): Promise<boolean> {
+    return comparePassword(password, this.password);
+  }
 
 }
