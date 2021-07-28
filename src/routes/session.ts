@@ -2,7 +2,7 @@ import { Router } from "express";
 import { v4 } from 'uuid';
 import User from "../entities/User";
 import Session from "../entities/Session";
-import { generateRefreshTokens } from "../helpers/generateToken";
+import { generateAccessTokens, generateRefreshTokens } from "../helpers/generateToken";
 
 const sessionRouter = Router();
 
@@ -11,21 +11,23 @@ sessionRouter.post("/", async (req, res, next) => {
     if (!username || !password)
         return res.status(400).json({ message: "Username or Password is missing" });
     try {
-        const user = await User.findOne({ where: { username }, select: ['username', 'password', 'id'] });
+        const user = await User.findOne({ where: { username }, select: ['password', 'id'] });
         if (!user)
             return res.status(404).json({ message: `user with username ${username} does not exists` });
         const isPasswordValid = await user.validatePassword(password);
         if (isPasswordValid) {
             const sessionId = v4();
-            const token = generateRefreshTokens({ userId: user.id, sessionId });
+            const refereshToken = generateRefreshTokens({ userId: user.id, sessionId });
+            const accessToken = generateAccessTokens({ sessionId });
             await Session.create({
                 id: sessionId,
-                token,
+                token: refereshToken,
                 userId: user.id,
                 expiresAt: new Date(Date.now()).toUTCString()
             }).save();
-            return res.status(200).json({ token });
+            return res.status(200).json({ refereshToken, accessToken });
         }
+        return res.status(401).json({ message: "Incorrect credentials" });
     } catch (error) {
         next(error);
     }
@@ -34,8 +36,8 @@ sessionRouter.post("/", async (req, res, next) => {
 sessionRouter.route("/:sessionId")
     .get(async (req, res, next) => {
         const { sessionId } = req.params;
-        if (!sessionId)
-            return res.status(400).json({ message: "Session Id is missing" });
+        if (!sessionId || sessionId.length !== 36)
+            return res.status(400).json({ message: "Invalid Session ID" });
         try {
             const session = await Session.findOne({ where: { id: sessionId } });
             if (session)
@@ -47,8 +49,8 @@ sessionRouter.route("/:sessionId")
     })
     .delete(async (req, res, next) => {
         const { sessionId } = req.params;
-        if (!sessionId)
-            return res.status(400).json({ message: "Session Id is missing" });
+        if (!sessionId || sessionId.length !== 36)
+            return res.status(400).json({ message: "Invalid Session ID" });
         try {
             await Session.delete({ id: sessionId });
             res.status(200).json({ message: "Logged out successfully" });
@@ -59,8 +61,8 @@ sessionRouter.route("/:sessionId")
 
 sessionRouter.get("/validate-session/:sessionId", async (req, res, next) => {
     const { sessionId } = req.params;
-    if (!sessionId)
-        return res.status(400).json({ message: "Session Id is missing" });
+    if (!sessionId || sessionId.length !== 36)
+        return res.status(400).json({ message: "Invalid Session ID" });
     try {
         const session = await Session.findOne({ where: { id: sessionId } });
         if (session)
@@ -71,19 +73,47 @@ sessionRouter.get("/validate-session/:sessionId", async (req, res, next) => {
     }
 });
 
-sessionRouter.post("/replace-session", async (req, res, next) => {
+sessionRouter.post("/get-refresh-token", async (req, res, next) => {
     const { sessionId, userId } = req.body;
+    if (!sessionId || sessionId.length !== 36)
+        return res.status(400).json({ message: "Invalid Session ID" });
+    if (!userId || userId.length !== 36)
+        return res.status(400).json({ message: "Invalid User ID" });
     try {
-        await Session.delete({ id: sessionId });
-        const newSessionId = v4();
-        const token = generateRefreshTokens({ userId: userId, sessionId: newSessionId });
-        await Session.create({
-            id: newSessionId,
-            token,
-            userId: userId,
-            expiresAt: new Date(Date.now()).toUTCString()
-        }).save();
-        return res.status(200).json({ token });
+        const session = await Session.findOne({ where: { id: sessionId } });
+        if (session && session.userId === userId) {
+            await session.remove();
+            const newSessionId = v4();
+            const refereshToken = generateRefreshTokens({ userId: userId, sessionId: newSessionId });
+            const accessToken = generateAccessTokens({ sessionId: newSessionId }); 
+            await Session.create({
+                id: newSessionId,
+                token: refereshToken,
+                userId: userId,
+                expiresAt: new Date(Date.now()).toUTCString()
+            }).save();
+            return res.status(200).json({ refereshToken, accessToken });
+        }
+        return res.status(404).json({ message: "Session does not exists" });
+    } catch (error) {
+        next(error);
+    }
+});
+
+sessionRouter.post("/get-access-token", async (req, res, next) => {
+    const { sessionId, userId } = req.body;
+    if (!sessionId || sessionId.length !== 36)
+        return res.status(400).json({ message: "Invalid Session ID" });
+    if (!userId || userId.length !== 36)
+        return res.status(400).json({ message: "Invalid User ID" });
+    try {
+        const session = await Session.findOne({ where: { id: sessionId } });
+        // set the timing and check if the session is valid or not!
+        if (session && session.userId === userId) {
+            const accessToken = generateAccessTokens({ sessionId });
+            return res.status(200).json({ accessToken });
+        }
+        return res.status(404).json({ message: "Session does not exists" });
     } catch (error) {
         next(error);
     }
