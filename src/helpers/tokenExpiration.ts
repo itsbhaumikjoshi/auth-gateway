@@ -1,18 +1,18 @@
 import Session from "../entities/Session";
 
-export const setTokenExpiration = (days: number): Date => {
+export const setSessionExpiration = (days: number): Date => {
     const expxiration = new Date();
     expxiration.setTime(expxiration.getTime() + (days * 24 * 60 * 60 * 1000));
     return expxiration;
 };
 
-export const hasTokenExpired = (expiresAt: Date): boolean => {
+export const hasSessionExpired = (expiresAt: Date): boolean => {
     return ((expiresAt.getTime() - Date.now()) / 1000) > 0 ? false : true;
 };
 
 export const isSessionValid = async (session: Session): Promise<boolean> => {
-    if (hasTokenExpired(session.expiresAt)) {
-        await session.remove();
+    if (hasSessionExpired(session.expiresAt)) {
+        await session.softRemove();
         return false;
     }
     return true;

@@ -22,11 +22,19 @@ export class sessions1627302780892 implements MigrationInterface {
             type: "varchar"
           },
           {
+            name: "access_tokens",
+            type: "int"
+          },
+          {
             name: "created_at",
             type: "timestamptz",
           },
           {
             name: "expires_at",
+            type: "timestamptz",
+          },
+          {
+            name: "deleted_at",
             type: "timestamptz",
           },
         ],

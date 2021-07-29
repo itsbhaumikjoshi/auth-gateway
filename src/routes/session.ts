@@ -3,7 +3,7 @@ import { v4 } from 'uuid';
 import User from "../entities/User";
 import Session from "../entities/Session";
 import { generateAccessTokens, generateRefreshTokens } from "../helpers/generateToken";
-import { setTokenExpiration, isSessionValid } from "../helpers/tokenExpiration";
+import { setSessionExpiration, isSessionValid } from "../helpers/tokenExpiration";
 
 const sessionRouter = Router();
 
@@ -24,7 +24,8 @@ sessionRouter.post("/", async (req, res, next) => {
                 id: sessionId,
                 token: refereshToken,
                 userId: user.id,
-                expiresAt: setTokenExpiration(30).toUTCString()
+                accessTokens: 1,
+                expiresAt: setSessionExpiration(30).toUTCString()
             }).save();
             return res.status(200).json({ refereshToken, accessToken });
         }
@@ -83,7 +84,7 @@ sessionRouter.post("/get-refresh-token", async (req, res, next) => {
     try {
         const session = await Session.findOne({ where: { id: sessionId } });
         if (session && session.userId === userId && await isSessionValid(session)) {
-            await session.remove();
+            await session.softRemove();
             const newSessionId = v4();
             const refereshToken = generateRefreshTokens({ userId: userId, sessionId: newSessionId });
             const accessToken = generateAccessTokens({ sessionId: newSessionId });
@@ -91,7 +92,8 @@ sessionRouter.post("/get-refresh-token", async (req, res, next) => {
                 id: newSessionId,
                 token: refereshToken,
                 userId: userId,
-                expiresAt: setTokenExpiration(30).toUTCString()
+                accessTokens: 1,
+                expiresAt: setSessionExpiration(30).toUTCString()
             }).save();
             return res.status(200).json({ refereshToken, accessToken });
         }
@@ -111,6 +113,8 @@ sessionRouter.post("/get-access-token", async (req, res, next) => {
         const session = await Session.findOne({ where: { id: sessionId } });
         if (session && session.userId === userId && await isSessionValid(session)) {
             const accessToken = generateAccessTokens({ sessionId });
+            session.accessTokens = session.accessTokens++;
+            await session.save();
             return res.status(200).json({ accessToken });
         }
         return res.status(404).json({ message: "Session does not exists" });

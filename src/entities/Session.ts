@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, BaseEntity, CreateDateColumn, Column } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, BaseEntity, CreateDateColumn, Column, DeleteDateColumn } from "typeorm";
 
 @Entity("sessions")
 export default class Session extends BaseEntity {
@@ -8,6 +8,9 @@ export default class Session extends BaseEntity {
 
   @Column("varchar")
   public token!: string;
+
+  @Column("int", { name: "access_tokens" })
+  public accessTokens!: number;
 
   @Column({
     type: "char",
@@ -21,5 +24,8 @@ export default class Session extends BaseEntity {
 
   @Column({ name: "expires_at", type: "timestamptz" })
   public expiresAt!: Date;
+
+  @DeleteDateColumn({ name: "deleted_at" })
+  public deletedAt!: Date;
 
 }
