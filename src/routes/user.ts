@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { nanoid } from "nanoid";
-import { getRepository, Like } from "typeorm";
+import { getConnection, getRepository, Like } from "typeorm";
 import User from "../entities/User";
 import { generateHash } from "../helpers/passwordHashing";
 
@@ -42,7 +42,7 @@ userRouter.route("/")
             next(error);
         }
     })
-    .delete(async (req, res, next) => {
+    .delete(async (_, __, next) => {
         try {
             await getRepository(User)
                 .createQueryBuilder()
@@ -103,22 +103,30 @@ userRouter.get("/restore/:userId", async (req, res, next) => {
     const { userId } = req.params;
     if (!userId || userId.length !== 36)
         return res.status(400).json({ message: "Invalid User ID" });
+    const connection = getConnection();
+    const queryRunner = connection.createQueryRunner();
     try {
         const user = await User.findOne({ where: { id: userId }, withDeleted: true });
         if (user && user.deletedAt) {
-            // add transaction
+            await queryRunner.startTransaction();
             const username = user.username.slice(0, -NANOID_CHARACTERS);
             await user.recover();
             const isUsernameAvailable = await User.findOne({ where: { username } });
-            if (isUsernameAvailable)
+            if (isUsernameAvailable) {
+                await queryRunner.commitTransaction();
                 return res.status(200).json({ message: "Account recovered successfully, We have changed your username as your username was already taken, your new username is " + user.username });
+            }
             user.username = username;
             await user.save();
+            await queryRunner.commitTransaction();
             return res.status(200).json({ message: "Account recovered successfully" });
         }
         return res.status(404).json({ message: "User not found" });
     } catch (error) {
         next(error);
+        await queryRunner.rollbackTransaction();
+    } finally {
+        await queryRunner.release();
     }
 });
 
