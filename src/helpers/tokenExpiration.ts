@@ -18,6 +18,8 @@ export const hasSessionExpired = (expiresAt: Date): boolean => ((expiresAt.getTi
  * Description - check if the session is valid, if not remove it.
 */
 export const isSessionValid = async (session: Session): Promise<boolean> => {
+    if(session.deletedAt)
+        return false;
     if (hasSessionExpired(session.expiresAt)) {
         await session.softRemove();
         return false;

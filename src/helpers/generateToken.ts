@@ -2,18 +2,21 @@ import { readFileSync } from "fs";
 import { sign, verify } from "jsonwebtoken";
 import { join } from "path";
 import Payload from "../types/jwtPayload";
-const REFRESH_PRIVATE_KEY = readFileSync(join(__dirname, '/bin/refresh_private_key.pem'));
-const ACCESS_PRIVATE_KEY = readFileSync(join(__dirname, '/bin/access_private_key.pem'));
+const PATH = process.env.NODE_ENV === "production" ? "/" : "/../../";
+const REFRESH_PRIVATE_KEY = readFileSync(join(__dirname, PATH + 'bin/refresh_private_key.pem'));
+const REFRESH_PASSPHRASE = '123456';
+const ACCESS_PASSPHRASE = '123456';
+const ACCESS_PRIVATE_KEY = readFileSync(join(__dirname, PATH + 'bin/access_private_key.pem'));
 
 /**
  * Description - creating the refresh token
 */
-export const generateRefreshTokens = (data: { userId: string, sessionId: string }): string => sign(data, REFRESH_PRIVATE_KEY, { expiresIn: '30d', algorithm: "RS256" });
+export const generateRefreshTokens = (data: { userId: string, sessionId: string }): string => sign(data, { key: REFRESH_PRIVATE_KEY, passphrase: REFRESH_PASSPHRASE }, { expiresIn: '30d', algorithm: "RS256" });
 
 /**
  * Description - creating the access token
 */
-export const generateAccessTokens = (data: { sessionId: string }): string => sign(data, ACCESS_PRIVATE_KEY, { expiresIn: '2m', algorithm: "RS256" });
+export const generateAccessTokens = (data: { sessionId: string }): string => sign(data, { key: ACCESS_PRIVATE_KEY, passphrase: ACCESS_PASSPHRASE }, { expiresIn: '2m', algorithm: "RS256" });
 
 /**
  * Description - creating the verification token. For user account verification
