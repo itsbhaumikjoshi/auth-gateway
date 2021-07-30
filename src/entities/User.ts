@@ -1,11 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, BaseEntity, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from "typeorm";
 import { comparePassword } from "../helpers/passwordHashing";
 
-export enum UserRole {
-  ADMIN = "admin",
-  USER = "user"
-}
-
 @Entity("users")
 export default class User extends BaseEntity {
 
@@ -15,7 +10,7 @@ export default class User extends BaseEntity {
   @Column({
     type: "varchar",
     unique: true,
-    length: 150
+    length: 250
   })
   public username!: string;
 
@@ -30,11 +25,11 @@ export default class User extends BaseEntity {
   public isVerified!: boolean;
 
   @Column({
-    type: "enum",
-    enum: UserRole,
-    default: UserRole.USER
+    type: "bool",
+    default: false,
+    name: "is_admin"
   })
-  public role!: UserRole;
+  public isAdmin!: boolean;
 
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   public createdAt!: Date;

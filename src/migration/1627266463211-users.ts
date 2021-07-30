@@ -1,5 +1,4 @@
 import { MigrationInterface, QueryRunner, Table, TableIndex } from "typeorm";
-import { UserRole } from "../entities/User";
 
 export class users1627266463211 implements MigrationInterface {
 
@@ -14,7 +13,7 @@ export class users1627266463211 implements MigrationInterface {
             type: "char",
           },
           {
-            length: "150",
+            length: "250",
             name: "username",
             type: "varchar",
             isUnique: true
@@ -26,13 +25,13 @@ export class users1627266463211 implements MigrationInterface {
           },
           {
             name: "is_verified",
-            type: "bool"
+            type: "bool",
+            default: false
           },
           {
-            name: "role",
-            type: "enum",
-            default: UserRole.USER,
-            enum: [UserRole.USER, UserRole.ADMIN]
+            name: "is_admin",
+            type: "bool",
+            default: false
           },
           {
             name: "created_at",
