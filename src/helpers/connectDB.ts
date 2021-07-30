@@ -1,6 +1,9 @@
-import { createConnection } from "typeorm";
+import { Connection, createConnection } from "typeorm";
 
-export default async function () {
+/**
+ * Description - Establishing database connection, and returns the connection
+*/
+const connectDB =  async (): Promise<Connection> => {
     try {
         const connection = await createConnection();
         return connection;                
@@ -9,3 +12,5 @@ export default async function () {
         process.exit(1);
     }
 }
+
+export default connectDB;
