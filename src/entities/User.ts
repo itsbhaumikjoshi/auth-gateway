@@ -15,7 +15,7 @@ export default class User extends BaseEntity {
   public username!: string;
 
   @Column({ type: "char", length: 60, select: false })
-  password: string;
+  public password!: string;
 
   @Column({
     type: "bool",

@@ -7,13 +7,13 @@ const router = Router();
 
 router.get("/", async (_, res) => {
     const [connection] = getConnectionManager().connections;
-    if(connection.isConnected)
-        res.status(200).json({message: "Service is available"});
+    if (connection.isConnected)
+        res.status(200).json({ message: "Service is available" });
     else
         throw new Error("Database is not connected");
 });
 
-router.use("/api/user", userRouter);
-router.use("/api/session", sessionRouter);
+router.use("/api/users", userRouter);
+router.use("/api/sessions", sessionRouter);
 
 export default router;

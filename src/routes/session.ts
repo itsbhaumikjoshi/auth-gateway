@@ -17,10 +17,10 @@ sessionRouter.post("/", async (req, res, next) => {
     if (!username || !password)
         return res.status(400).json({ message: "Username or Password is missing" });
     try {
-        const user = await User.findOne({ where: { username }, select: ['password', 'id'] });
+        const user = await User.findOne({ where: { username }, select: ['password', 'id', 'isVerified'] });
         if (!user)
             return res.status(404).json({ message: `user with username ${username} does not exists` });
-        if(!user.isVerified)
+        if (!user.isVerified)
             return res.status(403).json({ message: `Your account has not been verified yet, please confirm yoyur account.` });
         const isPasswordValid = await user.validatePassword(password);
         if (isPasswordValid) {
@@ -55,7 +55,7 @@ sessionRouter.route("/:sessionId")
             const session = await Session.findOne({ where: { id: sessionId } });
             if (session && await isSessionValid(session))
                 return res.status(200).json({ session });
-            return res.status(404).json({ message: "User not found" });
+            return res.status(404).json({ message: "Session not found" });
         } catch (error) {
             next(error);
         }
@@ -75,7 +75,7 @@ sessionRouter.route("/:sessionId")
 
 /**
 * Method - GET
-* Description - Validates the session. However, not returning the data back.
+* Description - Returns true is session is valid. Validates the session. However, not returning the data back.
 */
 sessionRouter.get("/validate-session/:sessionId", async (req, res, next) => {
     const { sessionId } = req.params;
@@ -84,8 +84,8 @@ sessionRouter.get("/validate-session/:sessionId", async (req, res, next) => {
     try {
         const session = await Session.findOne({ where: { id: sessionId } });
         if (session && await isSessionValid(session))
-            return res.status(200);
-        return res.status(404);
+            return res.status(200).json({ ok: true });
+        return res.status(404).json({ ok: false });
     } catch (error) {
         next(error);
     }
@@ -137,8 +137,7 @@ sessionRouter.post("/get-access-token", async (req, res, next) => {
         const session = await Session.findOne({ where: { id: sessionId } });
         if (session && session.userId === userId && await isSessionValid(session)) {
             const accessToken = generateAccessTokens({ sessionId });
-            session.accessTokens = session.accessTokens++;
-            await session.save();
+            await Session.update({ id: sessionId }, { accessTokens: session.accessTokens + 1 });
             return res.status(200).json({ accessToken });
         }
         return res.status(404).json({ message: "Session does not exists" });

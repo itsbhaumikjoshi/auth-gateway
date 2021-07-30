@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { nanoid } from "nanoid";
-import { getConnection, getRepository, Like } from "typeorm";
+import { getConnection, Like } from "typeorm";
 import User from "../entities/User";
 import Session from "../entities/Session";
 import { generateHash } from "../helpers/passwordHashing";
@@ -20,7 +20,7 @@ userRouter.route("/")
         const { key, value, limit, skip } = req.query;
         try {
             let users: Array<User>;
-            if (key) {
+            if (key)
                 users = await User.find({
                     take: limit ? +limit : 10,
                     skip: skip ? +skip : 0,
@@ -29,13 +29,12 @@ userRouter.route("/")
                     },
                     withDeleted: true
                 });
-            } else {
+            else
                 users = await User.find({
                     take: limit ? +limit : 10,
                     skip: skip ? +skip : 0,
                     withDeleted: true
                 });
-            }
             res.status(200).json(users);
         } catch (error) {
             next(error);
@@ -51,11 +50,20 @@ userRouter.route("/")
             next(error);
         }
     })
-    .delete(async (_, __, next) => {
+    .delete(async (_, res, next) => {
         try {
-            await getRepository(User)
-                .createQueryBuilder()
-                .softDelete();
+            // using transaction for rolling back incase if users are deleted, but is not logged out of all sessions
+            await getConnection().transaction(async transactionalEntityManager => {
+                await transactionalEntityManager.createQueryBuilder()
+                .softDelete()
+                .from(User)
+                .execute();
+                await transactionalEntityManager.createQueryBuilder()
+                .softDelete()
+                .from(Session)
+                .execute();
+            });
+            res.status(200).json({ ok: true });
         } catch (error) {
             next(error);
         }
@@ -72,11 +80,9 @@ userRouter.route("/:userId")
             return res.status(400).json({ message: "Invalid User ID" });
         try {
             const user = await User.findOne({ where: { id: userId } });
-            if (user) {
-                res.status(200).json({ user });
-            } else {
-                res.status(404).json({ message: "User not found" });
-            }
+            if (user && user.isVerified)
+                return res.status(200).json({ ...user });
+            return res.status(404).json({ message: "User not found" });
         } catch (error) {
             next(error);
         }
@@ -88,9 +94,12 @@ userRouter.route("/:userId")
         if (!req.body.username)
             return res.status(400).json({ message: "Sorry but you can't change this field!" });
         try {
-            const user = await User.update({ id: userId }, { username: req.body.username });
-            if (user.affected === 1)
+            const user = await User.findOne({ where: { id: userId } });
+            if (user && user.isVerified) {
+                user.username = req.body.username;
+                await user.save();
                 return res.status(200).json({ message: "User info updated" });
+            }
             return res.status(404).json({ message: "User not found" });
         } catch (error) {
             next(error);
@@ -103,9 +112,16 @@ userRouter.route("/:userId")
         try {
             const user = await User.findOne({ where: { id: userId } });
             if (user && user.isVerified) {
-                user.username = user.username + nanoid(NANOID_CHARACTERS);
-                await user.save();
-                await user.softRemove();
+                // using transaction for rolling back incase if user is deleted, but is not logged out of all sessions
+                await getConnection().transaction(async transactionalEntityManager => {
+                    await transactionalEntityManager.update(User, { id: userId }, { username: user.username + nanoid(NANOID_CHARACTERS) });
+                    await transactionalEntityManager.softRemove(User, { id: userId });
+                    await transactionalEntityManager.createQueryBuilder()
+                        .softDelete()
+                        .from(Session)
+                        .where("user_id = :userId", { userId })
+                        .execute();
+                });
                 return res.status(200).json({
                     restoreAccountToken: generateRestoreAccountToken({ userId: userId }),
                     message: "User deleted successfully, if you want to restore your account, you can do that in 30 days",
@@ -138,15 +154,15 @@ userRouter.put("/restore/:restoreAccountToken", async (req, res, next) => {
 
 /**
 * Methods - GET
-* Description - returns if the username exists in the database, not the user data.
+* Description - returns ture if the username is available, not the user data.
 */
 userRouter.get("/username/:username", async (req, res, next) => {
     const { username } = req.params;
     try {
         const user = await User.findOne({ where: { username } });
         if (user)
-            return res.status(409);
-        return res.status(200);
+            return res.status(409).json({ ok: false });
+        return res.status(200).json({ ok: true });
     } catch (error) {
         next(error);
     }
@@ -156,14 +172,12 @@ userRouter.get("/username/:username", async (req, res, next) => {
 * Methods - PUT
 * Description - Verifies the user
 */
-userRouter.put("/verify-user/:verificationToken", async (req, res, next) => {
+userRouter.put("/verify/:verificationToken", async (req, res, next) => {
     const { verificationToken } = req.params;
     if (!verificationToken)
         return res.status(400).json({ message: "Token not provided" });
     try {
         const { userId } = verifyVerificationToken(verificationToken);
-        if (isIdValid(userId))
-            return res.status(400).json({ message: "Invalid User ID" });
         await User.update({ id: userId }, { isVerified: true });
         return res.status(200).json({ messgae: "Account verified successfully." });
     } catch (error) {
@@ -183,8 +197,8 @@ userRouter.put("/change-password/:userId", async (req, res, next) => {
         const user = await User.findOne({ where: { id: userId } });
         if (!user)
             return res.status(404).json({ message: "User does not exists" });
-        const hashedPassword = await generateHash(req.body.password as string);
         if (user.isVerified) {
+            const hashedPassword = await generateHash(req.body.password as string);
             // using transaction for rolling back incase if user password changes, but is not logged out of all sessions
             await getConnection().transaction(async transactionalEntityManager => {
                 await transactionalEntityManager.update(User, { id: userId }, { password: hashedPassword });
@@ -196,7 +210,7 @@ userRouter.put("/change-password/:userId", async (req, res, next) => {
             });
             return res.status(200).json({ messgae: "Password updated successfully, You have been logged out of previously logged in systems." });
         }
-        return res.status(400).json({ messgae: "Your account is either deleted or not vverified." });
+        return res.status(403).json({ messgae: "Your account is not verified." });
     } catch (error) {
         next(error);
     }
