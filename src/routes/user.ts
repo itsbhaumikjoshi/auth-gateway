@@ -181,25 +181,25 @@ userRouter.put("/change-password/:userId", async (req, res, next) => {
         return res.status(400).json({ message: "Invalid User ID" });
     try {
         const user = await User.findOne({ where: { id: userId } });
-        if (!user) {
+        if (!user)
             return res.status(404).json({ message: "User does not exists" });
-        }
+        const hashedPassword = await generateHash(req.body.password as string);
         if (user.isVerified) {
-            const hashedPassword = await generateHash(req.body.password as string);
-            user.password = hashedPassword;
-            await user.save();
-            await getConnection()
-                .createQueryBuilder()
-                .softDelete()
-                .from(Session)
-                .where("user_id = :userId", { userId })
-                .execute();
+            // using transaction for rolling back incase if user password changes, but is not logged out of all sessions
+            await getConnection().transaction(async transactionalEntityManager => {
+                await transactionalEntityManager.update(User, { id: userId }, { password: hashedPassword });
+                await transactionalEntityManager.createQueryBuilder()
+                    .softDelete()
+                    .from(Session)
+                    .where("user_id = :userId", { userId })
+                    .execute();
+            });
             return res.status(200).json({ messgae: "Password updated successfully, You have been logged out of previously logged in systems." });
         }
         return res.status(400).json({ messgae: "Your account is either deleted or not vverified." });
     } catch (error) {
         next(error);
     }
-})
+});
 
 export default userRouter;
