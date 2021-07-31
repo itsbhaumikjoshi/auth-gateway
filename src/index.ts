@@ -8,7 +8,8 @@ import connectDB from "./helpers/connectDB";
 import ResponseError from "./types/errorHandler";
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = +process.env.PORT! || 5000;
+const HOST = process.env.HOST as string || "localhost";
 
 app.use(express.json());
 
@@ -34,7 +35,7 @@ app.use(express.json());
     });
 
     app.listen(PORT, () => {
-        console.log(`Server listening on http://localhost:${PORT}`);
+        console.log(`Server listening on http://${HOST}:${PORT}`);
     });
 
 })();
