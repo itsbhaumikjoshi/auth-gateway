@@ -2,13 +2,15 @@ import { Connection, createConnection } from "typeorm";
 /**
  * import all your entities here.
 */
+import AccessToken from "../entities/AccessToken";
+import RefreshToken from "../entities/RefreshToken";
 import User from "../entities/User";
-import Session from "../entities/Session";
 /**
  * import all your migrations here.
 */
-import { users1627266463211 } from "../migration/1627266463211-users";
-import { sessions1627302780892 } from "../migration/1627302780892-sessions";
+import { accessTokens1685164961642 } from "../migration/1685164961642-accessTokens";
+import { refreshTokens1685164952722 } from "../migration/1685164952722-refreshTokens";
+import { users1685164942053 } from "../migration/1685164942053-users";
 
 /**
  * Description - Establishing database connection, and returns the connection
@@ -31,19 +33,24 @@ const connectDB = async (): Promise<Connection> => {
             password: DB_PASSWORD as string,
             database: DB_NAME as string,
             logging: false,
-            synchronize: true,
             entities: [
+                AccessToken,
+                RefreshToken,
                 User,
-                Session
             ],
             migrations: [
-                users1627266463211,
-                sessions1627302780892
+                accessTokens1685164961642,
+                refreshTokens1685164952722,
+                users1685164942053,
             ],
             cli: {
                 migrationsDir: "src/migration"
             }
         });
+        
+        // by default the server runs migrations everytime it restarts, if and only if new migrations are created.
+        await connection.runMigrations();
+        
         return connection;
     } catch (error) {
         console.log(error);
