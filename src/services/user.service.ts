@@ -8,8 +8,8 @@ export default class UserService {
 
     constructor() { }
 
-    async get(id: string, queryRunner: QueryRunner): Promise<User | ServerErrors> {
-        const user = await queryRunner.manager.findOne(User, { id });
+    async get(id: string): Promise<User | ServerErrors> {
+        const user = await User.findOne({ id });
         return user || new ServerErrors("not_found", `User with user id - ${id} not exists.`);
     }
 
@@ -62,7 +62,7 @@ export default class UserService {
     }: {
         email?: string;
         id?: string;
-        expires_in: number;
+        expires_in?: number;
     }, queryRunner: QueryRunner): Promise<{ code: string; expires_in: number; } | ServerErrors> {
         const user = await queryRunner.manager.findOne(User, email ? { email } : { id });
         if (!user) return new ServerErrors("not_found", "User not found");
@@ -78,12 +78,14 @@ export default class UserService {
         };
     }
 
-    async verifyUserAccount(code: string, queryRunner: QueryRunner): Promise<boolean | ServerErrors> {
+    async verifyUserAccount(code: string, queryRunner: QueryRunner): Promise<User | ServerErrors> {
         const user = await queryRunner.manager.findOne(User, { code: createHash("sha256").update(code).digest("base64") });
         if (!user) return new ServerErrors("not_found");
+        user.code = null;
+        user.codeExpiresAt = null;
         user.isVerified = true;
         await user.save();
-        return true;
+        return user;
     }
 
     async changePassword({
@@ -113,6 +115,35 @@ export default class UserService {
             return true;
         }
         return new ServerErrors("invalid_arguments");
+    }
+
+    async updateEmail({ email, code }: { code: string; email: string; }, queryRunner: QueryRunner): Promise<boolean | ServerErrors> {
+        const user = await queryRunner.manager.findOne(User, { code: createHash("sha256").update(code).digest("base64") });
+        if (!user) return new ServerErrors("not_found");
+        user.code = null;
+        user.codeExpiresAt = null;
+        user.email = email;
+        await user.save();
+        return true;
+    }
+
+    async updateUserDetails({
+        username,
+        firstName,
+        lastName,
+        id
+    }: {
+        username?: string,
+        firstName?: string,
+        lastName?: string,
+        id: string;
+    }, queryRunner: QueryRunner): Promise<void | ServerErrors> {
+        const user = await this.get(id);
+        if (user instanceof ServerErrors) return user;
+        const updatedInfo: { [key: string]: string } = {};
+        if (username) updatedInfo["username"] = username;
+        if (firstName && lastName) updatedInfo["name"] = firstName + lastName
+        await queryRunner.manager.update(User, { id }, updatedInfo);
     }
 
 }
