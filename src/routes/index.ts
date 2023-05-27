@@ -1,7 +1,7 @@
 import { getConnectionManager } from "typeorm";
 import { Router } from "express";
 import userRouter from "./user";
-import sessionRouter from "./session";
+import tokenRouter from "./user";
 
 const router = Router();
 
@@ -14,6 +14,6 @@ router.get("/", async (_, res) => {
 });
 
 router.use("/api/users", userRouter);
-router.use("/api/sessions", sessionRouter);
+router.use("/api/tokens", tokenRouter);
 
 export default router;
