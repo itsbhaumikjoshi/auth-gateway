@@ -5,8 +5,8 @@ import express, { NextFunction, Response, Request } from "express";
 import router from "./routes";
 
 import connectDB from "./helpers/connectDB";
-import ResponseError from "./types/errorHandler";
 import { init } from "./helpers/init";
+import { ServerErrors } from "./error";
 
 const app = express();
 const PORT = +process.env.PORT! || 5000;
@@ -24,18 +24,15 @@ app.use(express.json());
     app.use("/", router);
 
     app.use(function (req, res, next) {
-        const error: ResponseError = new Error();
-        error.status = 404;
-        error.message = "Invalid Route";
-        next(error);
+        return res.status(404).json(new ServerErrors("not_found").toJson());
     });
 
     // error handler
-    app.use(function (err: ResponseError, req: Request, res: Response, next: NextFunction) {
+    app.use(function (err: Error, req: Request, res: Response, next: NextFunction) {
         res.locals.message = err.message;
         res.locals.error = req.app.get("env") === "development" ? err : {};
 
-        res.status(err.status || 500).json(err);
+        res.status(500).json(new ServerErrors("internal_error").toJson());
     });
 
     app.listen(PORT, () => {
