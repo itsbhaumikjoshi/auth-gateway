@@ -7,6 +7,8 @@ const accessTokenService = new AccessTokenService();
 const refreshTokenService = new RefreshTokenService();
 
 export const verifyAccessToken = (scope: string) => async (req: Request, res: Response, next: NextFunction) => {
+    if (req.body.code)
+        return next();
     if (!req.body.access_token)
         return res.status(401).json(new ServerErrors("unauthenticated", "access_token not found").toJson());
     const token = await accessTokenService.verifyToken(req.body.access_token);
