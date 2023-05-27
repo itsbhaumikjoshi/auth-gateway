@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { readFileSync } from "fs";
 import { JsonWebTokenError, sign, verify } from "jsonwebtoken";
 import { join } from "path";
@@ -11,8 +12,8 @@ import { AccessTokenPayload } from "../types/jwtPayload";
 const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY ? +process.env.ACCESS_TOKEN_EXPIRY : 3600;
 const ACCESS_TOKEN_PASSPHRASE = process.env.ACCESS_PASSPHRASE as string;
 const PATH = process.env.NODE_ENV === "production" ? "/" : "/../../";
-const ACCESS_PRIVATE_KEY = readFileSync(join(__dirname, PATH + "bin/access_private_key.pem", "utf-8"));
-const ACCESS_PUBLIC_KEY = readFileSync(join(__dirname, PATH + "bin/access_public_key.pem", "utf-8"));
+const ACCESS_PRIVATE_KEY = readFileSync(join(__dirname, PATH + "bin/access_private_key.pem"));
+const ACCESS_PUBLIC_KEY = readFileSync(join(__dirname, PATH + "bin/access_public_key.pem"));
 const AUDIENCE = process.env.AUDIENCE || "";
 
 export default class AccessTokenService {
@@ -72,7 +73,7 @@ export default class AccessTokenService {
             refreshToken: RefreshToken | string,
         }, queryRunner: QueryRunner
     ): Promise<{ token: string; expires_in: number; } | ServerErrors> {
-        const jti = crypto.randomUUID();
+        const jti = randomUUID();
         const token = await this.generateToken({ jti, user });
         await queryRunner.manager.create(AccessToken, {
             id: jti,

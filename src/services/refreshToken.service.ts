@@ -11,8 +11,8 @@ import { RefreshTokenPayload } from "../types/jwtPayload";
 const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY ? +process.env.REFRESH_TOKEN_EXPIRY : 60 * 60 * 24 * 7;
 const REFRESH_TOKEN_PASSPHRASE = process.env.REFRESH_PASSPHRASE as string;
 const PATH = process.env.NODE_ENV === "production" ? "/" : "/../../";
-const REFRESH_PRIVATE_KEY = readFileSync(join(__dirname, PATH + "bin/refresh_private_key.pem", "utf-8"));
-const REFRESH_PUBLIC_KEY = readFileSync(join(__dirname, PATH + "bin/refresh_public_key.pem", "utf-8"));
+const REFRESH_PRIVATE_KEY = readFileSync(join(__dirname, PATH + "bin/refresh_private_key.pem"));
+const REFRESH_PUBLIC_KEY = readFileSync(join(__dirname, PATH + "bin/refresh_public_key.pem"));
 const AUDIENCE = process.env.AUDIENCE || "";
 
 export default class RefreshTokenService {

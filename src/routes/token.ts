@@ -74,18 +74,18 @@ tokenRouter.post("/", verifyRefreshToken, async (req, res, next) => {
  * Methods: [GET]
  * Description: get public keys for access and refresh tokens to verify token authenticity.
  */
-tokenRouter.get("/keys", async (req, res, next) => {
+tokenRouter.get("/keys", (req, res, next) => {
     try {
         const PATH = process.env.NODE_ENV === "production" ? "/" : "/../../";
-        const accessTokenPublicKey = readFileSync(join(__dirname, PATH + "bin/access_public_key.pem", "utf-8"));
-        const refreshTokenPublicKey = readFileSync(join(__dirname, PATH + "bin/refresh_public_key.pem", "utf-8"));
-        return [{
+        const accessTokenPublicKey = readFileSync(join(__dirname, PATH + "bin/access_public_key.pem"));
+        const refreshTokenPublicKey = readFileSync(join(__dirname, PATH + "bin/refresh_public_key.pem"));
+        return res.status(200).json([{
             type: "access_token",
-            key: accessTokenPublicKey,
+            key: accessTokenPublicKey.toString(),
         }, {
             type: "refresh_token",
-            key: refreshTokenPublicKey
-        }]
+            key: refreshTokenPublicKey.toString()
+        }]);
     } catch (error) {
         next(error);
     }
