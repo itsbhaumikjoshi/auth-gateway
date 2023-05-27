@@ -6,6 +6,7 @@ import router from "./routes";
 
 import connectDB from "./helpers/connectDB";
 import ResponseError from "./types/errorHandler";
+import { init } from "./helpers/init";
 
 const app = express();
 const PORT = +process.env.PORT! || 5000;
@@ -14,6 +15,9 @@ const HOST = process.env.HOST as string || "localhost";
 app.use(express.json());
 
 (async () => {
+
+    // function to check the requirements are satisfied or not
+    init();
 
     await connectDB();
 
