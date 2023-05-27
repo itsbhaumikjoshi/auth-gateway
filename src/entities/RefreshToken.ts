@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, BaseEntity, CreateDateColumn, Column, DeleteDateColumn, OneToMany, ManyToOne } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, BaseEntity, CreateDateColumn, Column, DeleteDateColumn, OneToMany, ManyToOne, JoinColumn } from "typeorm";
 import AccessToken from "./AccessToken";
 import User from "./User";
 
@@ -10,6 +10,7 @@ export default class RefreshToken extends BaseEntity {
   public id!: string;
 
   @ManyToOne(() => User, (user) => user.refreshTokens, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "user_id" })
   public user!: User | string;
 
   @OneToMany(() => AccessToken, (at) => at.refreshToken, { cascade: ['soft-remove'] })

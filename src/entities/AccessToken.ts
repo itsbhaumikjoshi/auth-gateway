@@ -1,4 +1,4 @@
-import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import RefreshToken from "./RefreshToken";
 import User from "./User";
 
@@ -10,9 +10,11 @@ export default class AccessToken extends BaseEntity {
     public id!: string;
 
     @ManyToOne(() => RefreshToken, (rf) => rf.accessTokens, { onDelete: "CASCADE" })
+    @JoinColumn({ name: "refresh_token_id" })
     public refreshToken!: RefreshToken | string;
 
     @ManyToOne(() => User, (user) => user.accessTokens, { onDelete: "CASCADE" })
+    @JoinColumn({ name: "user_id" })
     public user!: User | string;
 
     @CreateDateColumn({ name: "created_at", type: "timestamptz" })
