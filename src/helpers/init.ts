@@ -2,14 +2,16 @@ import { existsSync } from "fs";
 import { join } from "path";
 
 export const init = () => {
-    
+
     const PATH = process.env.NODE_ENV === "production" ? "/" : "/../../";
 
     if (
         !existsSync(join(__dirname, PATH + "bin/refresh_private_key.pem")) ||
-        !existsSync(join(__dirname, PATH + "bin/access_private_key.pem"))
+        !existsSync(join(__dirname, PATH + "bin/refresh_public_key.pem")) ||
+        !existsSync(join(__dirname, PATH + "bin/access_private_key.pem")) ||
+        !existsSync(join(__dirname, PATH + "bin/access_public_key.pem"))
     ) {
-        console.error(`access_private_key.pem and refresh_private_key.pem missing in bin folder.`);
+        console.error(`access_private_key.pem or refresh_private_key.pem or refresh_public_key.pem or access_public_key.pem missing in bin folder.`);
         process.exit(1);
     }
 
