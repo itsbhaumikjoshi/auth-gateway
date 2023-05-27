@@ -51,14 +51,14 @@ export default class User extends BaseEntity {
     nullable: true,
     type: "varchar",
   })
-  public code: string;
+  public code: string | null;
 
   @Column({
     name: "code_expiry",
     nullable: true,
     type: "timestamptz"
   })
-  public codeExpiresAt: Date;
+  public codeExpiresAt: Date | null;
 
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   public createdAt!: Date;
