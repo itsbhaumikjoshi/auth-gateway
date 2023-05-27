@@ -77,7 +77,7 @@ export default class RefreshTokenService {
         user
     }: {
         user: User | string
-    }, queryRunner: QueryRunner): Promise<{ token: string; expires_in: number; } | ServerErrors> {
+    }, queryRunner: QueryRunner): Promise<{ token: string; jti: string; } | ServerErrors> {
         const jti = randomUUID();
         const token = await this.generateToken({ jti, userId: typeof user === "string" ? user : user.id });
         await queryRunner.manager.create(RefreshToken, {
@@ -87,7 +87,7 @@ export default class RefreshTokenService {
         }).save();
         return {
             token,
-            expires_in: REFRESH_TOKEN_EXPIRY
+            jti
         };
     }
 
