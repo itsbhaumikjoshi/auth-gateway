@@ -1,64 +1,72 @@
-# OAuth2.0
+# Auth Gateway Documentation
 
-A fully-fledged authorization service for your microservice architecture. You can directly integrate this service with your API Gateway or any other microservice.
+Auth Gateway is an authorization and authentication gateway designed to handle refresh tokens, user management, and access tokens. It utilizes a PostgreSQL database for data storage.
 
-**WARNING: You are requested to add your keys to the **bin** folder. However, the existing keys are for development use only. All the passwords, etc., are for development purposes only.**
+## Environment Variables
 
-# Overview
+Make sure to set the following environment variables before running the Auth Gateway:
 
-The description for the APIs can be found in the routes folder [here](https://github.com/joshibhaumik/OAuth2.0/tree/main/src). This microservice keeps track of Users and their Sessions (Refresh Tokens). However, it is not keeping track of the access tokens. You can use public keys at the Gateway to verify a session.
+| Variable Name           | Description                                                     |
+|-------------------------|-----------------------------------------------------------------|
+| `PORT`                  | The port number on which the server will listen.                 |
+| `HOST`                  | The hostname or IP address where the server will be hosted.      |
+| `REFRESH_PASSPHRASE`    | Passphrase used for signing and verifying refresh tokens.        |
+| `ACCESS_PASSPHRASE`     | Passphrase used for signing and verifying access tokens.         |
+| `REFRESH_TOKEN_EXPIRY`  | The expiration time (in seconds) for refresh tokens.             |
+| `ACCESS_TOKEN_EXPIRY`   | The expiration time (in seconds) for access tokens.              |
+| `SALT_ROUNDS`           | The number of rounds used for password hashing.                  |
+| `DB_HOST`               | The hostname or IP address of the PostgreSQL database.           |
+| `DB_USER`               | The username used to connect to the PostgreSQL database.         |
+| `DB_PASSWORD`           | The password used to connect to the PostgreSQL database.         |
+| `DB_NAME`               | The name of the PostgreSQL database.                             |
+| `DB_PORT`               | The port number of the PostgreSQL database.                      |
 
-If you have to add more User information, or columns you can edit the entities [here](https://github.com/joshibhaumik/OAuth2.0/blob/main/src/entities/User.ts) and **typeorm** will alter the table accordingly.
+## API Routes
 
-A user can delete their account and can recover the account back in 30 days, which can be changed as well.
+The Auth Gateway provides the following API routes:
 
-I would recommend checking the [FAQ](#faq) section if any queries.
+| Route                  | Method | Description                                                                    | Required Params             |
+|------------------------|--------|--------------------------------------------------------------------------------|-----------------------------|
+| `/users`               | GET    | Returns user details                                                           | `access_token`              |
+| `/users`               | POST   | Returns email verification code                                                |  `username`, `email`, `first_name`, `last_name`, `password`, `scope`                           |
+| `/users`               | DELETE | Deletes user account and associated refresh and access tokens                  | `access_token`              |
+| `/users`               | PUT    | Updates user details                                                           | `access_token`, (`username`, `first_name`, `last_name`)              |
+| `/users/verify-user`         | POST   | Marks the user as verified and returns authentication tokens                   | `code`                      |
+| `/users/forgot-password`     | POST   | Creates a verification code to be sent to the email                            | `email`                     |
+| `/users/change-password`     | POST   | Changes user password using the forgot password code or access_token                           | `code`, `id`, `old_password`, `password`, `access_token` |
+| `/users/change-email-request`| POST   | Creates an email change code to be sent to the new email                       | `access_token`              |
+| `/users/change-email`        | POST   | Changes the email address                                                      | `code`, `access_token`, `email` |
+| `/tokens`              | POST   | Renews the refresh_token if needed or issues a new access token                 | `refresh_token`             |
+| `/tokens`              | DELETE | Deletes the refresh token and all associated access tokens                     | `refresh_token`             |
+| `/tokens/keys`         | GET    | Returns the access and refresh public keys used to verify JWT tokens            |                             |
+| `/tokens/signin`       | POST   | Allows the user to sign in using their username or email and password           | `username`, `password`       |
 
-# Installations
+Please note that some routes require additional headers or parameters as specified in the "Required Params" column of the table above.
 
-Getting this microservice up and running is quite simple.
+## Features
 
-## Steps
+The Auth Gateway provides the following features:
 
-1. Rename **.env-sample** to **.env** and complete it up.
-1. Run command __```yarn install```__ or __```npm install```__ in your terminal.
-1. Copy your **RS256** keys to **bin** folder. The filename in the code can be changed [here](https://github.com/joshibhaumik/OAuth2.0/blob/main/src/helpers/generateToken.ts). Make sure to remove the development keys.
+- **Refresh Tokens**: The gateway handles the issuance and renewal of refresh tokens
 
-_The good thing with **typeorm** is, it automatically creates the tables by replicating the entity structure._
+ for long-term authentication.
+- **User Management**: Users can be created, updated, and deleted, and their details can be retrieved.
+- **Access Tokens**: Access tokens are issued to authenticated users for short-term authorization.
+- **Email Verification**: The gateway supports email verification by generating verification codes.
+- **Password Management**: Users can reset their password using verification codes or access tokens.
+- **Email Change**: Users can request to change their email address, and verification codes are sent to the new email.
+- **Error Handling**: Custom error handling is implemented with error codes and descriptions for better debugging and user experience.
 
-## For Development
+### Error Codes
 
-For development, purposes run.
+The Auth Gateway utilizes the following error codes for custom error handling:
 
-```
-yarn watch
-```
+- `internal_error`: An internal server error occurred.
+- `not_found`: The requested resource was not found.
+- `forbidden`: The user is not authorized to access the requested resource.
+- `invalid_arguments`: The provided arguments are invalid or missing.
+- `unauthenticated`: The user is not authenticated to perform the requested action.
 
-And the changes can be monitored.
+Please refer to the `error_code` and `error_description` in the API responses to identify and handle errors appropriately.
 
-## For Production
-
-For making the production-ready build. Run
-
-```
-yarn build && yarn start
-```
-
-```yarn build``` will build the production-ready bundle in the __dist__ folder, with your **RS256** keys. ```yarn start``` will run that bundle.
-
-# FAQ
-
-### 1. What if someone deletes their account? Can anyone else use the same username to register?
-
-Yes, when users delete their account, their username is changed by appending N length random characters. Let say your username is **demo**, and you choose to delete your account. After deletion, your username will be - demo12345678_0, where N is 10.
-
-### 2. Who will send the verification/restore token?
-
-I have assumed you have a service that will either send an email or an SMS containing an account verification token or account restore token. That's why account verification token on user signup and restore token on user deletion is issued. **However, you have to send back the **token** itself to this service to verify the user or to restore the deleted account.**
-
-### 3. There are many security leaks!
-
-Actually, every request received by this service is assumed to pass through a Gateway or a service in front. The rest of the security is taken into the consideration while developing this microservice.
-
-### 4. Where can I find the userId, which is asked by the service?
-The tokens that you receive, when verified by the API Gateway using a public key, give you the __userId__ and the __sessionId__ with which it is associated.
+Feel free to explore and utilize the Auth Gateway API to handle authorization and authentication in your applications.
