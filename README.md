@@ -2,24 +2,19 @@
 
 Auth Gateway is an authorization and authentication gateway designed to handle refresh tokens, user management, and access tokens. It utilizes a PostgreSQL database for data storage.
 
-## Environment Variables
+## Features
 
-Make sure to set the following environment variables before running the Auth Gateway:
+The Auth Gateway provides the following features:
 
-| Variable Name           | Description                                                     |
-|-------------------------|-----------------------------------------------------------------|
-| `PORT`                  | The port number on which the server will listen.                 |
-| `HOST`                  | The hostname or IP address where the server will be hosted.      |
-| `REFRESH_PASSPHRASE`    | Passphrase used for signing and verifying refresh tokens.        |
-| `ACCESS_PASSPHRASE`     | Passphrase used for signing and verifying access tokens.         |
-| `REFRESH_TOKEN_EXPIRY`  | The expiration time (in seconds) for refresh tokens.             |
-| `ACCESS_TOKEN_EXPIRY`   | The expiration time (in seconds) for access tokens.              |
-| `SALT_ROUNDS`           | The number of rounds used for password hashing.                  |
-| `DB_HOST`               | The hostname or IP address of the PostgreSQL database.           |
-| `DB_USER`               | The username used to connect to the PostgreSQL database.         |
-| `DB_PASSWORD`           | The password used to connect to the PostgreSQL database.         |
-| `DB_NAME`               | The name of the PostgreSQL database.                             |
-| `DB_PORT`               | The port number of the PostgreSQL database.                      |
+- **Refresh Tokens**: The gateway handles the issuance and renewal of refresh tokens
+
+ for long-term authentication.
+- **User Management**: Users can be created, updated, and deleted, and their details can be retrieved.
+- **Access Tokens**: Access tokens are issued to authenticated users for short-term authorization.
+- **Email Verification**: The gateway supports email verification by generating verification codes.
+- **Password Management**: Users can reset their password using verification codes or access tokens.
+- **Email Change**: Users can request to change their email address, and verification codes are sent to the new email.
+- **Error Handling**: Custom error handling is implemented with error codes and descriptions for better debugging and user experience.
 
 ## API Routes
 
@@ -43,19 +38,24 @@ The Auth Gateway provides the following API routes:
 
 Please note that some routes require additional headers or parameters as specified in the "Required Params" column of the table above.
 
-## Features
+## Environment Variables
 
-The Auth Gateway provides the following features:
+Make sure to set the following environment variables before running the Auth Gateway:
 
-- **Refresh Tokens**: The gateway handles the issuance and renewal of refresh tokens
-
- for long-term authentication.
-- **User Management**: Users can be created, updated, and deleted, and their details can be retrieved.
-- **Access Tokens**: Access tokens are issued to authenticated users for short-term authorization.
-- **Email Verification**: The gateway supports email verification by generating verification codes.
-- **Password Management**: Users can reset their password using verification codes or access tokens.
-- **Email Change**: Users can request to change their email address, and verification codes are sent to the new email.
-- **Error Handling**: Custom error handling is implemented with error codes and descriptions for better debugging and user experience.
+| Variable Name           | Description                                                     |
+|-------------------------|-----------------------------------------------------------------|
+| `PORT`                  | The port number on which the server will listen.                 |
+| `HOST`                  | The hostname or IP address where the server will be hosted.      |
+| `REFRESH_PASSPHRASE`    | Passphrase used for signing and verifying refresh tokens.        |
+| `ACCESS_PASSPHRASE`     | Passphrase used for signing and verifying access tokens.         |
+| `REFRESH_TOKEN_EXPIRY`  | The expiration time (in seconds) for refresh tokens.             |
+| `ACCESS_TOKEN_EXPIRY`   | The expiration time (in seconds) for access tokens.              |
+| `SALT_ROUNDS`           | The number of rounds used for password hashing.                  |
+| `DB_HOST`               | The hostname or IP address of the PostgreSQL database.           |
+| `DB_USER`               | The username used to connect to the PostgreSQL database.         |
+| `DB_PASSWORD`           | The password used to connect to the PostgreSQL database.         |
+| `DB_NAME`               | The name of the PostgreSQL database.                             |
+| `DB_PORT`               | The port number of the PostgreSQL database.                      |
 
 ### Error Codes
 
